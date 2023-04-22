@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::fmt::Formatter;
 use std::io::{BufRead, BufReader, Cursor};
+use std::string::FromUtf8Error;
 use std::sync::Arc;
 use std::{cmp::max, cmp::Ordering, collections::HashSet};
 
@@ -265,6 +266,14 @@ pub enum DeltaTableError {
 
 impl From<object_store::path::Error> for DeltaTableError {
     fn from(err: object_store::path::Error) -> Self {
+        Self::GenericError {
+            source: Box::new(err),
+        }
+    }
+}
+
+impl From<FromUtf8Error> for DeltaTableError {
+    fn from(err: FromUtf8Error) -> Self {
         Self::GenericError {
             source: Box::new(err),
         }
