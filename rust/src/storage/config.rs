@@ -246,7 +246,7 @@ fn url_prefix_handler<T: ObjectStore>(
     store: T,
     storage_url: &Url,
 ) -> DeltaResult<Arc<DynObjectStore>> {
-    let prefix = Path::from(storage_url.path().replace("%20", " ")); // allow spaces
+    let prefix = Path::parse(storage_url.path())?;
     if prefix != Path::from("/") {
         Ok(Arc::new(PrefixStore::new(store, prefix)))
     } else {
@@ -273,7 +273,7 @@ mod test {
         let contents = b"test";
         let key = "test.txt";
         let file_path = path.join(key);
-        std::fs::write(&file_path, &contents).unwrap();
+        std::fs::write(&file_path, contents).unwrap();
 
         let res = store
             .get(&object_store::path::Path::from(key))

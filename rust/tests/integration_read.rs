@@ -1,7 +1,7 @@
 #![cfg(feature = "integration_test")]
 
 use deltalake::test_utils::{IntegrationContext, StorageIntegration, TestResult, TestTables};
-use deltalake::DeltaTableBuilder;
+use deltalake::{DeltaTableBuilder, ObjectStore};
 #[cfg(any(feature = "s3", feature = "s3-native-tls"))]
 use dynamodb_lock::dynamo_lock_options;
 #[cfg(any(feature = "s3", feature = "s3-native-tls"))]
@@ -84,18 +84,34 @@ async fn read_table_paths(
         .load_table_with_name(TestTables::Delta0_8_0SpecialPartitioned, upload_path)
         .await?;
 
+    verify_store(&context, table_root).await?;
+
     read_encoded_table(&context, table_root).await?;
+
+    Ok(())
+}
+
+async fn verify_store(integration: &IntegrationContext, root_path: &str) -> TestResult {
+    let table_uri = format!("{}/{}", integration.root_uri(), root_path);
+    let storage = DeltaTableBuilder::from_uri(table_uri.clone())
+        .with_allow_http(true)
+        .build_storage()?;
+
+    let files = storage.list_with_delimiter(None).await?;
+    assert_eq!(
+        vec![
+            Path::parse("_delta_log").unwrap(),
+            Path::parse("x=A%2FA").unwrap(),
+            Path::parse("x=B%20B").unwrap(),
+        ],
+        files.common_prefixes
+    );
 
     Ok(())
 }
 
 async fn read_encoded_table(integration: &IntegrationContext, root_path: &str) -> TestResult {
     let table_uri = format!("{}/{}", integration.root_uri(), root_path);
-
-    let storage = DeltaTableBuilder::from_uri(table_uri.clone())
-        .with_allow_http(true)
-        .build_storage()?;
-    dbg!(storage.root_uri());
 
     let table = DeltaTableBuilder::from_uri(table_uri)
         .with_allow_http(true)

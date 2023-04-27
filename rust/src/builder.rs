@@ -367,10 +367,10 @@ pub(crate) fn ensure_table_uri(table_uri: impl AsRef<str>) -> DeltaResult<Url> {
 
     let uri_type: UriType = if let Ok(url) = Url::parse(table_uri) {
         if url.scheme() == "file" {
-            UriType::LocalPath(PathBuf::from(url.to_file_path().map_err(|err| {
+            UriType::LocalPath(url.to_file_path().map_err(|err| {
                 let msg = format!("Invalid table location: {}\nError: {:?}", table_uri, err);
                 DeltaTableError::InvalidTableLocation(msg)
-            })?))
+            })?)
         } else {
             UriType::Url(url)
         }
@@ -381,7 +381,6 @@ pub(crate) fn ensure_table_uri(table_uri: impl AsRef<str>) -> DeltaResult<Url> {
     // If it is a local path, we need to create it if it does not exist.
     let mut url = match uri_type {
         UriType::LocalPath(path) => {
-            dbg!(&path);
             if !path.exists() {
                 std::fs::create_dir_all(&path).map_err(|err| {
                     let msg = format!(
