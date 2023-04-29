@@ -9,6 +9,8 @@ Native Delta Lake implementation in Rust
 
 ### API
 
+test hello world
+
 ```rust
 let table = deltalake::open_table("./tests/data/simple_table").await.unwrap();
 println!("{}", table.get_files());
